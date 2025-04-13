@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+  # Конфигурационный сервер
+  mongodb_config1:
+    container_name: mongodb_config1
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --configsvr --replSet configrs --bind_ip_all --port ${CONFIG_PORT}
+    volumes:
+      - mongodb_config1_data:/data/configdb
+
+  # Шард 1-1
+  mongodb_shard1:
+    container_name: mongodb_shard1
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --shardsvr --replSet shard1rs --bind_ip_all  --port ${SHARD_PORT}
+    volumes:
+      - mongodb_shard1_data:/data/db
+
+  # Шард 1-2
+  mongodb_shard1_2:
+    container_name: mongodb_shard1_2
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --shardsvr --replSet shard1rs --bind_ip_all  --port ${SHARD_PORT}
+    volumes:
+      - mongodb_shard1_2_data:/data/db
+
+  # Шард 1-3
+  mongodb_shard1_3:
+    container_name: mongodb_shard1_3
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --shardsvr --replSet shard1rs --bind_ip_all  --port ${SHARD_PORT}
+    volumes:
+      - mongodb_shard1_3_data:/data/db
+
+  # Шард 2-1
+  mongodb_shard2:
+    container_name: mongodb_shard2
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --shardsvr --replSet shard2rs --bind_ip_all  --port ${SHARD_PORT}
+    volumes:
+      - mongodb_shard2_data:/data/db
+
+  # Шард 2-2
+  mongodb_shard2_2:
+    container_name: mongodb_shard2_2
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --shardsvr --replSet shard2rs --bind_ip_all  --port ${SHARD_PORT}
+    volumes:
+      - mongodb_shard2_2_data:/data/db
+
+  # Шард 2-3
+  mongodb_shard2_3:
+    container_name: mongodb_shard2_3
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongod --shardsvr --replSet shard2rs --bind_ip_all  --port ${SHARD_PORT}
+    volumes:
+      - mongodb_shard2_3_data:/data/db
+
+  # Роутер (mongos)
+  mongodb_router:
+    container_name: mongodb_router
+    image: dh-mirror.gitverse.ru/mongo:latest
+    command: mongos --configdb configrs/mongodb_config1 --bind_ip_all  --port ${ROUTER_PORT}
+    depends_on:
+      - mongodb_config1
+      - mongodb_shard1
+      - mongodb_shard1_2
+      - mongodb_shard1_3
+      - mongodb_shard2
+      - mongodb_shard2_2
+      - mongodb_shard2_3
+    volumes:
+      - router_data:/data/db
+    ports:
+      - "${ROUTER_PORT}:${ROUTER_PORT}"
+
+  # Приложение
+  pymongo_api:
+    container_name: pymongo_api
+    build:
+      context: api_app
+      dockerfile: Dockerfile
+    image: kazhem/pymongo_api:1.0.0
+    depends_on:
+      - mongodb_router
+    ports:
+      - "8080:8080"
+    environment:
+      MONGODB_URL: "mongodb://mongodb_router:${ROUTER_PORT}"
+      MONGODB_DATABASE_NAME: "somedb"
+
+volumes:
+  router_data:
+  mongodb_config1_data:
+  mongodb_shard1_data:
+  mongodb_shard1_2_data:
+  mongodb_shard1_3_data:
+  mongodb_shard2_data:
+  mongodb_shard2_2_data:
+  mongodb_shard2_3_data:
