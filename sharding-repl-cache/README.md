@@ -1,4 +1,4 @@
-# pymongo-api (реализация шардирования)
+# pymongo-api (реализация шардирования + репликация + redis cache)
 
 ## Как запустить
 
@@ -26,4 +26,10 @@ docker compose down -v
 
 ```shell
 curl -X 'GET' 'http://localhost:8080/helloDoc/count' -H 'accept: application/json' && echo
+```
+
+#### Для проверки работоспособности кеширования
+
+```shell
+curl -X 'GET' 'http://localhost:8080/helloDoc/users' -H 'accept: application/json' | jq . 
 ```
